@@ -186,7 +186,7 @@ begin
 			
 --test 5 :
 	iY <= std_logic_vector(unsigned(iY) + unsigned(compt)) after 40 ns;
-	compt <= std_logic_vector(unsigned(compt) + 1);
+	compt <= std_logic_vector(unsigned(compt) + 1) after 40 ns;
 
 
 

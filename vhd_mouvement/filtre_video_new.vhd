@@ -53,33 +53,15 @@ component module_fenetrage
 		);
 end component;
 
-component memoire_ligne is
-	generic (
-		address_size : integer;
-		word_size : integer := 8
-		);
-	port (
-		CLK			: in std_logic;
-		RESET		: in std_logic;		
-		address 	: in std_logic_vector(address_size-1 downto 0);
-		data_in		: in std_logic_vector(word_size-1 downto 0);
-		data_out	: out std_logic_vector(word_size-1 downto 0);
-		read_write	: in std_logic
-		);
-end component;
-
 component filtre_roberts is
 	generic (
-		address_size : integer
+		address_size	: integer := 8
 		);
 	port (
 		CLK				: in std_logic;
 		RESET			: in std_logic;
-		pix12_address	: out std_logic_vector(address_size-1 downto 0);
-		pix12_ram		: in std_logic_vector(7 downto 0);
-		read_write		: out std_logic;
 		iY				: in std_logic_vector(7 downto 0);
-		oY				: out std_logic_vector(7 downto 0);
+		oY				: inout std_logic_vector(7 downto 0);
 		in_active_area	: in std_logic
 		);
 end component;
@@ -88,22 +70,17 @@ end component;
 
 
 --signaux flux video
-signal sig_Y1			: std_logic_vector(7 downto 0) ;
-signal sig_Y2			: std_logic_vector(7 downto 0) ;
-signal sig_Y3			: std_logic_vector(7 downto 0) ;
+signal sig_Y1			: std_logic_vector(7 downto 0);
+signal sig_Y2			: std_logic_vector(7 downto 0);
+signal sig_Y3			: std_logic_vector(7 downto 0);
 
 --signaux de synchro module fenetrage
 signal Y_cpt			: std_logic_vector(10 downto 0);
 signal X_cpt 			: std_logic_vector(10 downto 0);
 signal in_active_area 	: std_logic;
 
---signaux memoire
-signal address			:std_logic_vector(size-1 downto 0);
-signal data_out			:std_logic_vector(7 downto 0);
-signal read_write		:std_logic;
-
 --signaux debug
-signal threshold		: std_logic_vector(7 downto 0) ;
+signal threshold		: std_logic_vector(7 downto 0);
 
 begin
 	u_1: module_fenetrage 
@@ -119,31 +96,15 @@ begin
 			X_cpt => X_cpt,
 			Y_cpt => Y_cpt
 			);
+
 	
-	
-	u_2: memoire_ligne
-	generic map(
-			address_size => size
-			)
-	port map(
-			CLK => CLK,
-			RESET => RESET,
-			address => address,
-			data_in => sig_Y1,
-			data_out => data_out,
-			read_write => read_write
-			);
-	
-	u_3: filtre_roberts
+	u_2: filtre_roberts
 	generic map(
 			address_size => size
 	     )
 	port map(
 		CLK => CLK,
 		RESET => RESET,
-		pix12_address => address,
-		pix12_ram => data_out,
-		read_write => read_write,
 		iY => sig_Y1,
 		oY => sig_Y2,
 		in_active_area => in_active_area
@@ -161,7 +122,7 @@ begin
 		case( switch(4 downto 0) ) is
 			when "00000" => oY <= iY; -- avant fenetrage		
 			when "00001" => oY <= sig_Y1; -- après fenetrage				
-			when others  => oY <= sig_Y2;  -- après Robert
+			when others  => oY <= sig_Y2;  -- après Roberts
 		end case ;
 	end process ; -- process_affichage
 	

@@ -1,5 +1,5 @@
 -- module memoire_ligne
--- permet de stocker une ligne complète de pixel
+-- permet de stocker une ligne complète de pixels
 -- et de la lire dans le sens inverse pour traitement anti-causal
 
 library IEEE;
@@ -7,18 +7,17 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 entity memoire_ligne is
-		generic (
-		address_size : integer;
-		word_size : integer := 8
-		);
-	    port (
-		CLK			: in std_logic;
-		RESET		: in std_logic;		
-		address 	: in std_logic_vector(address_size-1 downto 0);
-		data_in		: in std_logic_vector(word_size-1 downto 0);
-		data_out	: out std_logic_vector(word_size-1 downto 0);
-		read_write	: in std_logic
-		);
+	generic (
+		address_size	: integer := 8;
+		word_size		: integer := 8
+	);
+    port (
+		CLK				: in std_logic;
+		address 		: in std_logic_vector(address_size-1 downto 0);
+		data_in			: in std_logic_vector(word_size-1 downto 0);
+		data_out		: out std_logic_vector(word_size-1 downto 0);
+		read_write		: in std_logic
+	);
 end entity memoire_ligne;
 
 
