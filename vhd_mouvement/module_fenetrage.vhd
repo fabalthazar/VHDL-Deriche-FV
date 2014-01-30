@@ -7,6 +7,7 @@ entity module_fenetrage is
 			size			: integer
 		 	);	
     port 	(
+            CLK				: in std_logic;
 			--signaux de synchro du flux video
 			VGA_X 			:	in std_logic_vector(10 downto 0);	
 			VGA_Y 			:	in std_logic_vector(10 downto 0);
@@ -31,8 +32,9 @@ architecture A of module_fenetrage is
 begin
 	
 	--combinatoire
-	process_combi:process(VGA_X, VGA_Y, iY)
+	process_combi:process(clk)
 	begin
+	if CLK='1' and CLK'event then
 	if (VGA_Y >= std_logic_vector(to_unsigned(2**size,11))) then
 		in_active_area <= '0';	
 		oY <= "00010000";
@@ -43,6 +45,7 @@ begin
 		in_active_area <= '1';
 		--pas de modif			
 		oY <= iY;
+	end if;
 	end if;
 	end process process_combi;
 

@@ -11,12 +11,14 @@ end entity bench;
 
 architecture A of bench is
 	
-	constant size : integer := 4;
+    constant size   : integer := 4;
+    constant gamma  : std_logic_vector(2 downto 0) := "100";  -- "100" = 0.5
 	
 	component filtre_video 
 		generic (
-				size	: integer
-				--address_size	:integer
+                size        : integer := 8;
+                size_RAM    : integer := 9;
+                gamma       : std_logic_vector(2 downto 0) := "100"
 				);
 		port (
 				CLK		: in std_logic; --clock à 54 Mhz
@@ -100,7 +102,9 @@ begin
 
 	filtre : filtre_video
 		generic map(
-		size => size
+		size => size,
+		size_RAM => size,
+		gamma => gamma
 		)
 		port map(
 		CLK	=> CLK,
@@ -134,7 +138,7 @@ begin
 		chip_enable => chip_enable,
 		high_mask => high_mask,
 		low_mask => low_mask
-		) ;
+		);
 
 	
 	switch <= "000" & "00000000000" & "1111";

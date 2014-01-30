@@ -4,12 +4,14 @@ use IEEE.numeric_std.all;
 
 entity filtre_video is
 	generic (
-			size	: integer := 8 	-- taille de la sous-fenetre = 2**size pixels
+			size        : integer := 8;  -- taille de la sous-fenetre = 2**size pixels
+			size_RAM    : integer := 9;
+			gamma       : std_logic_vector(2 downto 0) := "100"
 			);
     port (
 			--horloge et reset
 			CLK			: in std_logic; -- clock à 54 MHz
-			RESET 		: in std_logic; -- reset à 0 			
+			RESET 		: in std_logic; -- reset à 0
 			-- flux video à 27 MHz
 			-- synchro
 			VGA_X :	in std_logic_vector(10 downto 0); -- compteur pixels
@@ -29,10 +31,10 @@ entity filtre_video is
 			data_SRAM		: inout std_logic_vector(15 downto 0);  -- à connecter à SRAM_DQ
 			write_enable 	: out std_logic; 						-- à connecter à SRAM_WE_N
 			read_enable 	: out std_logic; 						-- à connecter à SRAM_OE_N
-			chip_enable 	: out std_logic;						-- à connecter à SRAM_CE_N 
+			chip_enable 	: out std_logic;						-- à connecter à SRAM_CE_N
 			high_mask 		: out std_logic ; 						-- à connecter à SRAM_UB_N
-			low_mask 		: out std_logic 			
-			);			
+			low_mask 		: out std_logic
+			);
 end entity filtre_video;
 
 
@@ -42,9 +44,9 @@ component module_fenetrage
 	generic (
 			size			: integer := 8
 			);
-	port (
+	port (CLK				: in std_logic;
 			VGA_X 			:	in std_logic_vector(10 downto 0);
-			VGA_Y 			:	in std_logic_vector(10 downto 0);			
+			VGA_Y 			:	in std_logic_vector(10 downto 0);
 			iY 				: 	in std_logic_vector(7 downto 0);
 			oY				: 	out std_logic_vector(7 downto 0);
 			in_active_area 	:	out std_logic;
@@ -54,20 +56,31 @@ component module_fenetrage
 end component;
 
 component filtre_roberts is
-	generic (
-		address_size	: integer := 8
-		);
-	port (
-		CLK				: in std_logic;
-		RESET			: in std_logic;
-		iY				: in std_logic_vector(7 downto 0);
-		oY				: inout std_logic_vector(7 downto 0);
-		in_active_area	: in std_logic
-		);
+    generic (
+        address_size    : integer := 8
+    );
+    port (
+        CLK             : in std_logic;
+        RESET           : in std_logic;
+        iY              : in std_logic_vector(7 downto 0);
+        oY              : inout std_logic_vector(7 downto 0);
+        in_active_area  : in std_logic
+    );
 end component;
 
-
-
+component module_lissage is
+	generic (
+	    address_size    : integer := 8;
+		gamma           : std_logic_vector(2 downto 0) := "100"
+    );
+    port (
+        CLK             : in std_logic;
+        RESET           : in std_logic;
+        iY              : in std_logic_vector(7 downto 0);
+        oY              : inout std_logic_vector(7 downto 0);
+        in_active_area  : in std_logic
+    );
+end component;
 
 --signaux flux video
 signal sig_Y1			: std_logic_vector(7 downto 0);
@@ -83,48 +96,60 @@ signal in_active_area 	: std_logic;
 signal threshold		: std_logic_vector(7 downto 0);
 
 begin
-	u_1: module_fenetrage 
-	generic map(
-			size => size
-			)
-	port map(
-			VGA_X => VGA_X,
-			VGA_Y => VGA_Y,			
-			iY	=> iY,
-			oY	=> sig_Y1,
-			in_active_area => in_active_area,
-			X_cpt => X_cpt,
-			Y_cpt => Y_cpt
-			);
+    u_1: module_fenetrage
+    generic map(
+        size => size
+    )
+    port map(
+        CLK => CLK,
+        VGA_X => VGA_X,
+        VGA_Y => VGA_Y,
+        iY	=> iY,
+        oY	=> sig_Y1,
+        in_active_area => in_active_area,
+        X_cpt => X_cpt,
+        Y_cpt => Y_cpt
+    );
 
-	
-	u_2: filtre_roberts
-	generic map(
-			address_size => size
-	     )
-	port map(
-		CLK => CLK,
-		RESET => RESET,
-		iY => sig_Y1,
-		oY => sig_Y2,
-		in_active_area => in_active_area
-		);
-	
-	
+    u_2: filtre_roberts
+    generic map(
+        address_size => size_RAM
+    )
+    port map(
+        CLK => CLK,
+        RESET => RESET,
+        iY => sig_Y3,
+        oY => sig_Y2,
+        in_active_area => in_active_area
+    );
+
+    u_3: module_lissage
+    generic map(
+        address_size => size_RAM,
+        gamma => gamma
+    )
+    port map(
+        CLK => CLK,
+        RESET => RESET,
+        iY => sig_Y1,
+        oY => sig_Y3,
+        in_active_area => in_active_area
+    );
+
 	--concurrent
 	threshold <= switch(17 downto 10);
-	oCb <= X"80";		
+	oCb <= X"80";
 	oCr <= X"80";
 
 	--process
 	process_affichage : process( switch, iY, sig_Y1, sig_Y2, sig_Y3)
 	begin
 		case( switch(4 downto 0) ) is
-			when "00000" => oY <= iY; -- avant fenetrage		
-			when "00001" => oY <= sig_Y1; -- après fenetrage				
+			when "00000" => oY <= iY; -- avant fenetrage
+			when "00001" => oY <= sig_Y1; -- après fenetrage
 			when others  => oY <= sig_Y2;  -- après Roberts
 		end case ;
 	end process ; -- process_affichage
-	
 
-end architecture A;	
+end architecture A;
+
